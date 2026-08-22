@@ -1,4 +1,4 @@
-// Gianluca Mazzini @2026- Version 1.00
+// Gianluca Mazzini @2026- Version 1.02
 
 #include <arpa/inet.h>
 #include <errno.h>
@@ -167,7 +167,9 @@ static int recv_frame(int s,unsigned char **payload,unsigned int *payload_len) {
 static int open_ipv4_socket(const char *ip,unsigned short port) {
   struct sockaddr_in addr;
   struct timeval timeout;
+  unsigned int attempt;
   int s;
+  int last_errno;
 
   memset(&addr,0,sizeof(addr));
   addr.sin_family=AF_INET;
@@ -177,23 +179,32 @@ static int open_ipv4_socket(const char *ip,unsigned short port) {
     return -1;
   }
 
-  s=socket(AF_INET,SOCK_STREAM,0);
-  if(s<0)
-    return -1;
-
   timeout.tv_sec=SOCKET_TIMEOUT_SECONDS;
   timeout.tv_usec=0;
-  if(setsockopt(s,SOL_SOCKET,SO_RCVTIMEO,&timeout,sizeof(timeout))<0 ||
-     setsockopt(s,SOL_SOCKET,SO_SNDTIMEO,&timeout,sizeof(timeout))<0) {
+  last_errno=ECONNREFUSED;
+
+  for(attempt=0U;attempt<30U;attempt++) {
+    s=socket(AF_INET,SOCK_STREAM,0);
+    if(s<0)
+      return -1;
+
+    if(setsockopt(s,SOL_SOCKET,SO_RCVTIMEO,&timeout,sizeof(timeout))<0 ||
+       setsockopt(s,SOL_SOCKET,SO_SNDTIMEO,&timeout,sizeof(timeout))<0) {
+      close(s);
+      return -1;
+    }
+
+    if(connect(s,(struct sockaddr *)&addr,sizeof(addr))==0)
+      return s;
+
+    last_errno=errno;
     close(s);
-    return -1;
+    if(attempt+1U<30U)
+      sleep(1);
   }
 
-  if(connect(s,(struct sockaddr *)&addr,sizeof(addr))<0) {
-    close(s);
-    return -1;
-  }
-  return s;
+  errno=last_errno;
+  return -1;
 }
 
 static int init_command_channel(Camera *camera,const char *ip,unsigned short port) {
@@ -513,7 +524,7 @@ static int get_object_handles(Camera *camera,unsigned int storage_id,
   *count=0U;
   params[0]=storage_id;
   params[1]=0U;
-  params[2]=0xffffffffU;
+  params[2]=0U;
   data=NULL;
   data_len=0U;
 
@@ -803,6 +814,7 @@ static int process_storage(Camera *camera,unsigned int storage_id,
   handle_count=0U;
   if(get_object_handles(camera,storage_id,&handles,&handle_count)<0)
     return -1;
+  printf("Storage 0x%08x: %u objects\n",storage_id,handle_count);
 
   for(i=0U;i<handle_count;i++) {
     if(get_object_info(camera,handles[i],&info)<0) {

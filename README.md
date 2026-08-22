@@ -64,7 +64,7 @@ If the existing profile was paired with the Airmtp setup used previously, this p
 
 ## Current status
 
-Version 1.00 has been compile-checked, but it has not yet been tested against the physical EOS 6D.
+Version 1.02 has been compile-checked, but it has not yet been tested against the physical EOS 6D.
 
 The first real-camera test should be:
 
@@ -83,3 +83,9 @@ Check that:
 ## Design scope
 
 This is intentionally not a general Airmtp replacement. It implements only the workflow needed here: connect to a Canon EOS 6D and download all files.
+
+## Version 1.02
+
+- Corrected Canon object enumeration parameter.
+- Corrected storage diagnostic control flow.
+- Added up to 30 TCP connection attempts, one second apart, to tolerate Canon Wi-Fi startup latency.
