@@ -18,7 +18,7 @@ cc -std=gnu89 -O2 -Wall -Wextra canon6dget.c -o canon6dget
 
 No external libraries are required.
 
-The source follows C89 declaration/syntax rules. `gnu89` is used only because ISO C89 itself does not accept `//` comments, which are the required project comment style.
+The source follows C89 declaration and syntax rules. `gnu89` is used only because ISO C89 itself does not accept `//` comments, which are the required project comment style.
 
 ## Usage
 
@@ -29,7 +29,7 @@ The source follows C89 declaration/syntax rules. `gnu89` is used only because IS
 Example:
 
 ```sh
-./canon6dget 192.168.31.200 15740 ~/Pictures/Canon6D
+./canon6dget 10.0.0.20 15740 ~/Pictures/Canon6D
 ```
 
 `PATH` is created if the final directory does not already exist.
@@ -38,54 +38,38 @@ Example:
 
 - Connects directly to the camera IP and TCP port supplied on the command line.
 - Uses PTP/IP.
-- Uses the same client GUID, host name and protocol version used by Airmtp 1.1, so an EOS 6D Wi-Fi profile already paired with Airmtp should be reusable.
-- Enumerates every storage and every object.
+- Uses the client identity `airmtp` for compatibility with the Canon Wi-Fi pairing already associated with that client.
+- Enumerates every storage and every object available on the camera.
 - Downloads every non-folder object, regardless of file extension or format.
-- Existing destination files are replaced.
-- A download is first written as `filename.part`; the final destination file is replaced only after the complete transfer succeeds.
+- Existing destination files are replaced automatically.
+- Each download is first written as `filename.part`; the final destination file is replaced only after the complete transfer succeeds.
 - Nothing is deleted or modified on the camera.
 - Full files are transferred with `GetPartialObject` in 1 MiB blocks.
+- The program retries the TCP connection for up to 30 seconds to tolerate Canon Wi-Fi startup latency.
 - There is no download history, filtering, renaming engine, discovery or configuration file.
 
 ## Canon EOS 6D Wi-Fi setup
 
-The camera can be connected to the same access point as the Mac.
+The camera can be connected to the same Wi-Fi access point as the computer.
 
-A known working example:
+A typical configuration is:
 
 ```text
-Camera IP: 192.168.31.200
+Camera IP: 10.0.0.20
 Port:      15740
+Client:    airmtp
 ```
 
-During the first pairing, leave the camera on its computer-pairing screen and start the client. Canon cameras associate a Wi-Fi connection profile with the client GUID.
+Start the Wi-Fi connection on the Canon EOS 6D first and leave the camera waiting for the computer. Then run `canon6dget`.
 
-If the existing profile was paired with the Airmtp setup used previously, this program deliberately presents Airmtp 1.1's default client identity for compatibility.
-
-## Current status
-
-Version 1.02 has been compile-checked, but it has not yet been tested against the physical EOS 6D.
-
-The first real-camera test should be:
+Example:
 
 ```sh
-./canon6dget 192.168.31.200 15740 ./test-download
+./canon6dget 10.0.0.20 15740 /Users/gmazzini/Downloads
 ```
 
-Check that:
-
-1. pairing/session setup completes;
-2. JPG and CR2 files are both listed and downloaded;
-3. downloaded sizes match the files on the camera;
-4. running the command a second time replaces the local files;
-5. an interrupted transfer leaves only the `.part` file and does not replace a previously complete file.
+During the first pairing with a new camera connection profile, leave the camera on its computer-pairing screen and start `canon6dget`. The camera associates the Wi-Fi connection profile with the client identity used by the program.
 
 ## Design scope
 
-This is intentionally not a general Airmtp replacement. It implements only the workflow needed here: connect to a Canon EOS 6D and download all files.
-
-## Version 1.02
-
-- Corrected Canon object enumeration parameter.
-- Corrected storage diagnostic control flow.
-- Added up to 30 TCP connection attempts, one second apart, to tolerate Canon Wi-Fi startup latency.
+`canon6dget` is intentionally not a general-purpose camera transfer utility. It implements one operation only: connect to a Canon EOS 6D and download all available files to the selected directory.
