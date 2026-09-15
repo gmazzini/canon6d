@@ -65,7 +65,7 @@ Start the Wi-Fi connection on the Canon EOS 6D first and leave the camera waitin
 Example:
 
 ```sh
-./canon6dget 10.0.0.20 15740 /Users/gmazzini/Downloads
+./canon6dget 10.0.0.20 15740 ~/Downloads
 ```
 
 During the first pairing with a new camera connection profile, leave the camera on its computer-pairing screen and start `canon6dget`. The camera associates the Wi-Fi connection profile with the client identity used by the program.
